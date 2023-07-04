@@ -3,12 +3,13 @@
 #include <map>
 #include <curl/curl.h>
 #include "json.hpp"
-#include "config.h"
+
 
 
 using json = nlohmann::json;
 
-// Constants
+// Constants 
+const std::string API_KEY = std::getenv("API");
 const std::string API_URL = "https://openexchangerates.org/api/latest.json?app_id="+ API_KEY;
 
 // Struct to store the API response

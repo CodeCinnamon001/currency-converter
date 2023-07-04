@@ -1,6 +1,4 @@
-Sure! Here's an updated version of the README.md file that includes instructions on how to use the API and import the API key into the main.cpp file:
 
-markdown
 # Currency Converter
 
 The Currency Converter is a program written in C++ that automates the process of converting currencies. It uses an external library, `libcurl`, for making HTTP requests to retrieve currency exchange rates from an API.
@@ -21,29 +19,58 @@ The Currency Converter is a program written in C++ that automates the process of
 1. Clone the repository or download the source code files.
 
 2. Ensure that `libcurl` is installed on your system. If not, you may need to install it using your system's package manager.
+3. Visit [openexchangerates](https://openexchangerates.org) and create a free api plan and copy the api_id
 
-3. Obtain an API key from the currency exchange rate provider. You can sign up on their website to get an API key.
+### For Replit Users
 
-4. In the `config.h` file, define a constant named `API_KEY` and assign your API key to it. The file should look like this:
+3. Create a new Replit secret to store the API key. Follow these steps:
 
-   ```cpp
-   #ifndef API_KEY_H
-   #define API_KEY_H
+   - Open your Replit project.
+   - On the left sidebar, click on the "Lock" icon (Secrets) located at the bottom.
+   - In the Secrets panel, click on the "New secret" button.
+   - Enter a name for your secret, such as `API`, in the "Name" field.
+   - In the "Value" field, enter your actual API key.
+   - Click on the "Add secret" button to save the secret.
 
-   const std::string API_KEY = "YOUR_API_KEY";
+4. Update the `main.cpp` file to retrieve the API key from the Replit secret:
 
-   #endif
+   - Update the `const std::string API_URL` definition as follows:
+
+     ```cpp
+     const std::string API_KEY = std::getenv("API");
+     const std::string API_URL = "https://openexchangerates.org/api/latest.json?app_id=" + API_KEY;
+     ```
+
+### For Visual Studio Code and Other IDE Users
+
+3. Create a file named `.env` in the root directory of your project.
+
+4. In the `.env` file, add the following line, replacing `YOUR_API_KEY` with your actual API key:
+
+   ```plaintext
+   API=YOUR_API_KEY
    ```
 
-   Replace "YOUR_API_KEY" with your actual API key.
+5. Save the `.env` file.
 
-5. Compile the program using your preferred C++ compiler with the following command:
+6. In your `main.cpp` file, include the `<cstdlib>` header at the top to use the `std::getenv` function.
+
+7. Update the `const std::string API_URL` definition as follows:
+
+   ```cpp
+   const std::string API_KEY = std::getenv("API");
+   const std::string API_URL = "https://openexchangerates.org/api/latest.json?app_id=" + API_KEY;
+   ```
+
+### Common Steps for All Users
+
+8. Compile the program using your preferred C++ compiler with the following command:
 
    ```
    g++ main.cpp -lcurl -o currency_converter
    ```
 
-6. Run the executable file generated after compilation:
+9. Run the executable file generated after compilation:
 
    ```
    ./currency_converter
@@ -64,7 +91,9 @@ The Currency Converter is a program written in C++ that automates the process of
    - Euro (EUR)
    - British Pound (GBP)
    - Japanese Yen (JPY)
-   - Canadian Dollar (CAD)
+   -
+
+ Canadian Dollar (CAD)
    - Australian Dollar (AUD)
    - Swiss Franc (CHF)
    - Chinese Yuan Renminbi (CNY)
@@ -83,7 +112,5 @@ Contributions are welcome! If you encounter any issues or have suggestions for i
 ## Acknowledgements
 
 - The project utilizes the `libcurl` library for making HTTP requests to retrieve currency exchange rates.
-- Special thanks to nlohmann for their JSON library: [https://github.com/nlohmann/json](https://github.com/nlohmann/json)
+- Special thanks to nlohmann for providing the JSON library used in this project (https://github.com/nlohmann/json).
 ```
-
-Please make sure to replace "YOUR_API_KEY" in the `api_key.h` file with your actual API key obtained from the currency exchange rate provider.
