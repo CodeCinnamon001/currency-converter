@@ -1,9 +1,21 @@
 #include <iostream>
 #include <string>
+#include <map>
 #include <curl/curl.h>
 #include "json.hpp"
+#include "config.h"
+
 
 using json = nlohmann::json;
+
+// Constants
+const std::string API_URL = "https://openexchangerates.org/api/latest.json?app_id="+ API_KEY;
+
+// Struct to store the API response
+struct ApiResponse {
+    std::string response;
+    int httpCode;
+};
 
 // Callback function to receive API response
 size_t CurlCallback(void* contents, size_t size, size_t nmemb, std::string* response) {
@@ -13,68 +25,80 @@ size_t CurlCallback(void* contents, size_t size, size_t nmemb, std::string* resp
 }
 
 // Function to perform API request
-std::string FetchExchangeRates() {
-    std::string apiUrl = "https://api.exchangerate-api.com/v4/latest/USD";
-
+ApiResponse FetchExchangeRates() {
     CURL* curl = curl_easy_init();
+    ApiResponse apiResponse;
     std::string response;
 
     if (curl) {
-        curl_easy_setopt(curl, CURLOPT_URL, apiUrl.c_str());
+        curl_easy_setopt(curl, CURLOPT_URL, API_URL.c_str());
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, CurlCallback);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
 
         CURLcode res = curl_easy_perform(curl);
-        if (res != CURLE_OK) {
-            std::cerr << "Failed to fetch exchange rates. Error: " << curl_easy_strerror(res) << std::endl;
+        if (res == CURLE_OK) {
+            curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &apiResponse.httpCode);
+            apiResponse.response = response;
         }
-
         curl_easy_cleanup(curl);
     }
 
-    return response;
+    return apiResponse;
 }
 
-// Function to convert currency
-double ConvertCurrency(double amount, double exchangeRate) {
-    return amount * exchangeRate;
+// Function to extract exchange rates from the API response
+std::map<std::string, double> GetExchangeRates(const std::string& jsonResponse) {
+    std::map<std::string, double> exchangeRates;
+
+    json data = json::parse(jsonResponse);
+
+    if (data.contains("rates")) {
+        for (const auto& [currency, rate] : data["rates"].items()) {
+            double exchangeRate = rate;
+            exchangeRates[currency] = exchangeRate;
+        }
+    }
+
+    return exchangeRates;
+}
+
+// Function to perform currency conversion
+double ConvertCurrency(double amount, double fromRate, double toRate) {
+    return (amount / fromRate) * toRate;
 }
 
 int main() {
-    std::string apiResponse = FetchExchangeRates();
+    ApiResponse apiResponse = FetchExchangeRates();
 
-    if (!apiResponse.empty()) {
-        json exchangeData = json::parse(apiResponse);
+    if (apiResponse.httpCode == 200) {
+        std::map<std::string, double> exchangeRates = GetExchangeRates(apiResponse.response);
 
-        // User input
+        
+        std::string fromCurrency;
+        std::string toCurrency;
         double amount;
-        std::string fromCurrency, toCurrency;
 
-        // Get user input
-        std::cout << "Enter amount: ";
-        std::cin >> amount;
-        std::cout << "Enter currency to convert from (e.g., USD): ";
+        std::cout << "Enter the source currency code: ";
         std::cin >> fromCurrency;
-        std::cout << "Enter currency to convert to (e.g., EUR): ";
+        std::cout << "Enter the target currency code: ";
         std::cin >> toCurrency;
+        std::cout << "Enter the amount to convert: ";
+        std::cin >> amount;
 
-        // Check if the conversion rates are available
-        if (exchangeData.contains("rates")) {
-            double fromRate = exchangeData["rates"].value(fromCurrency, 0.0);
-            double toRate = exchangeData["rates"].value(toCurrency, 0.0);
+        if (exchangeRates.count(fromCurrency) && exchangeRates.count(toCurrency)) {
+            double fromRate = exchangeRates[fromCurrency];
+            double toRate = exchangeRates[toCurrency];
 
-            if (fromRate != 0.0 && toRate != 0.0) {
-                double convertedAmount = ConvertCurrency(amount, toRate / fromRate);
+            double convertedAmount = ConvertCurrency(amount, fromRate, toRate);
 
-                // Print the result
-                std::cout << amount << " " << fromCurrency << " is equivalent to " << convertedAmount << " " << toCurrency << std::endl;
-            } else {
-                std::cout << "Unsupported conversion." << std::endl;
-            }
+            std::cout << amount << " " << fromCurrency << " is equivalent to " << convertedAmount << " " << toCurrency << std::endl;
+        } else {
+            std::cout << "Invalid currency codes entered." << std::endl;
         }
-    } else {
-        std::cout << "Failed to fetch exchange rates." << std::endl;
+    }
+    else {
+        std::cout << "Failed to fetch exchange rates. Error code: " << apiResponse.httpCode << std::endl;
     }
 
     return 0;
-    }
+}
